@@ -296,24 +296,43 @@ Arsitektur autentikasi Cepat UI menggunakan pola Adapter (`AuthAdapter`). Kode U
          ▼
    [authAdapter]  ── (Interface: login, logout, me, register)
          │
-    ┌────┴────────────────────────┐
-    ▼                             ▼
-[MockAuthAdapter]     [LaravelSanctumAdapter]
-(In-memory array)     (Cookie/CSRF SPA Session)
+    ┌────┴──────────────────────────────────────┐
+    ▼                                           ▼
+[MockAuthAdapter]                   [LaravelSanctumAdapter]
+(In-memory demo)                    (Auto-detect Dual Mode)
+                                    ├─ Mode 1: Bearer API Token (Default)
+                                    └─ Mode 2: Stateful Cookie / SPA Session
 ```
 
 ### Menggunakan Laravel Sanctum
 
 Starter ini menyertakan template companion backend siap pakai di folder [`examples/backend-laravel/`](examples/backend-laravel/):
-- `AuthController.php`: Endpoint login, register, me, dan logout yang sesuai dengan kontrak User Cepat UI.
-- `routes-api.php`: Definisi rute autentikasi Laravel.
+- `AuthController.php`: Endpoint login, register, me, dan logout dengan personal access token Sanctum (`createToken`).
+- `routes-api.php`: Definisi rute autentikasi Laravel (`/api/login`, `/api/register`, `/api/user`, `/api/logout`).
 - `cors.php`: Konfigurasi CORS dengan `supports_credentials => true`.
 
-Untuk beralih:
+Untuk mengaktifkan adapter Sanctum:
 ```bash
 npm run cepat -- use:backend sanctum
 ```
-Pastikan backend Laravel Anda berjalan pada port yang sesuai (`php artisan serve`).
+
+#### Dukungan Dual-Mode Sanctum (Auto-Detect)
+
+`LaravelSanctumAdapter` otomatis mendeteksi pola autentikasi backend Anda:
+
+1. **Mode 1: Sanctum Bearer API Token (Default & Recommended)**
+   - Menggunakan token personal access Sanctum (`plainTextToken`).
+   - Sangat ideal untuk arsitektur headless (Vite di port `:5173` $\leftrightarrow$ Laravel di port `:8000`) atau mobile app.
+   - Token disimpan secara aman di storage lokal dan otomatis dikirim via header `Authorization: Bearer <token>` pada setiap request.
+   - Langsung bekerja *out-of-the-box* dengan file companion di `examples/backend-laravel/`.
+
+2. **Mode 2: Stateful Cookie / Session SPA (Laravel Breeze / Fortify)**
+   - Jika response login tidak mengembalikan token, adapter otomatis beralih ke validasi cookie sesi berbasis CSRF (`/sanctum/csrf-cookie`).
+   - **Penting:** Pastikan file `.env` di proyek Laravel Anda telah menyertakan domain frontend:
+     ```env
+     SANCTUM_STATEFUL_DOMAINS=localhost:5173,127.0.0.1:5173
+     SESSION_DOMAIN=localhost
+     ```
 
 ### Menggunakan useAuth() di Komponen
 

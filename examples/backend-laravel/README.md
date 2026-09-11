@@ -49,8 +49,9 @@ Salin file-file dari folder ini ke direktori proyek Laravel Anda:
 
 ---
 
-## 3. Konfigurasi CORS (`config/cors.php`)
+## 3. Konfigurasi CORS & Environment Laravel
 
+### A. CORS (`config/cors.php`)
 Pastikan Vite dev server (`http://localhost:5173`) diizinkan mengakses API:
 
 ```php
@@ -69,6 +70,20 @@ Pastikan Vite dev server (`http://localhost:5173`) diizinkan mengakses API:
 'supports_credentials' => true,
 ```
 
+### B. Konfigurasi Mode Autentikasi
+
+Cepat UI mendukung dua pola autentikasi Sanctum secara otomatis:
+
+- **Mode 1: Bearer API Token (Default & Recommended)**
+  Menggunakan controller contoh `AuthController.php` (`createToken`). Frontend otomatis menangkap personal access token dan mengirimkannya via header `Authorization: Bearer <token>`. Mode ini tidak membutuhkan pengaturan domain session yang rumit.
+  
+- **Mode 2: Stateful Cookie / Session SPA (Laravel Breeze / Fortify)**
+  Jika Anda menggunakan sistem autentikasi session cookie bawaan Laravel Breeze, tambahkan baris berikut pada file `.env` proyek Laravel Anda agar cookie session dikenali:
+  ```env
+  SANCTUM_STATEFUL_DOMAINS=localhost:5173,127.0.0.1:5173
+  SESSION_DOMAIN=localhost
+  ```
+
 ---
 
 ## 4. Aktifkan Sanctum Adapter di Cepat UI
@@ -76,7 +91,7 @@ Pastikan Vite dev server (`http://localhost:5173`) diizinkan mengakses API:
 Di folder frontend Cepat UI, jalankan perintah CLI:
 
 ```bash
-# Otomatis mengatur src/plugins/auth.ts dan .env (VITE_API_BASE_URL=http://localhost:8000)
+# Otomatis mengatur src/plugins/auth.ts dan .env (VITE_API_URL=http://localhost:8000)
 npm run cepat use:backend sanctum
 ```
 
