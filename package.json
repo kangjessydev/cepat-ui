@@ -1,7 +1,7 @@
 {
   "name": "cepat-ui",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Cepat UI — Vue 3 Dashboard Starter Template",
   "type": "module",
   "scripts": {
