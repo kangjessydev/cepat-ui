@@ -65,7 +65,7 @@
 
     <!-- Delete confirmation modal -->
     <BaseModal v-model="showDeleteModal" title="Delete User" size="sm" persistent>
-      <p style="color: var(--text-secondary); font-size: 0.875rem; margin: 0 0 1.25rem">
+      <p class="modal-confirm-text">
         Are you sure you want to delete <strong>{{ deletingUser?.name }}</strong>? This action cannot be undone.
       </p>
       <template #footer>
@@ -229,4 +229,11 @@ function getAvatarColor(name: string) {
 
 .user-name { font-size: 0.875rem; font-weight: 500; color: var(--text-primary); margin: 0; }
 .user-email { font-size: 0.75rem; color: var(--text-muted); margin: 0; }
+
+.modal-confirm-text {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin: 0 0 1.25rem;
+  line-height: 1.5;
+}
 </style>

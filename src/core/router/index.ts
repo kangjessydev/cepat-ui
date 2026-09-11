@@ -56,11 +56,24 @@ const router = createRouter({
       meta: { layout: 'dashboard', requiresAuth: true, title: 'General Settings' },
     },
 
-        {
+    {
       path: '/products',
       name: 'products',
       component: () => import('@/pages/products/index.vue'),
       meta: { layout: 'dashboard', requiresAuth: true, title: 'Products' },
+    },
+    // UI Kit Showcase
+    {
+      path: '/ui/components',
+      name: 'ui-components',
+      component: () => import('@/pages/ui/components.vue'),
+      meta: { layout: 'dashboard', requiresAuth: true, title: 'UI Components' },
+    },
+    {
+      path: '/ui/forms',
+      name: 'ui-forms',
+      component: () => import('@/pages/ui/forms.vue'),
+      meta: { layout: 'dashboard', requiresAuth: true, title: 'AutoForm Showcase' },
     },
     // 404
     {

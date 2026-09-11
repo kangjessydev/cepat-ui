@@ -40,6 +40,10 @@ export interface FieldSchema {
   rules?: FieldRule[]
   /** Grid column span (1-12) */
   span?: number
+  /** For date/datetime: use browser native picker if true, or custom Cepat calendar if false (default: false) */
+  native?: boolean
+  minDate?: string
+  maxDate?: string
   /** Show field only if condition is true */
   showIf?: (values: Record<string, unknown>) => boolean
 }

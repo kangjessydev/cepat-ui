@@ -151,13 +151,13 @@ const quickActions = [
 /* Stats */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1rem;
   margin-bottom: 1.25rem;
 }
 
-@media (max-width: 1200px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 640px) { .stats-grid { grid-template-columns: 1fr; } }
+@media (max-width: 1200px) { .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .stats-grid { grid-template-columns: minmax(0, 1fr); } }
 
 .stat-card {
   padding: 1.25rem;
@@ -207,11 +207,11 @@ const quickActions = [
 /* Content grid */
 .content-grid {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: minmax(0, 1fr) 320px;
   gap: 1rem;
 }
 
-@media (max-width: 1024px) { .content-grid { grid-template-columns: 1fr; } }
+@media (max-width: 1024px) { .content-grid { grid-template-columns: minmax(0, 1fr); } }
 
 .activity-card,
 .quick-actions-card { padding: 1.25rem; }

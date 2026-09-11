@@ -16,7 +16,7 @@
     </template>
 
     <!-- Actions slot or default -->
-    <div class="form-actions" :style="{ gridColumn: `span ${schema.columns ?? 1}` }">
+    <div :class="['form-actions', `actions-span-${schema.columns ?? 1}`]">
       <slot name="actions" :loading="loading" :submit="handleSubmit" :reset="handleReset">
         <button v-if="schema.cancelLabel" type="button" class="btn-cancel" @click="$emit('cancel')">
           {{ schema.cancelLabel }}
@@ -99,14 +99,32 @@ defineExpose({ values, handleSubmit, handleReset })
 .auto-form {
   display: grid;
   gap: 1.125rem;
+  width: 100%;
+  min-width: 0;
 }
 
-.cols-1 { grid-template-columns: 1fr; }
-.cols-2 { grid-template-columns: repeat(2, 1fr); }
-.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.cols-1 { grid-template-columns: minmax(0, 1fr); }
+.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
-@media (max-width: 640px) {
-  .cols-2, .cols-3 { grid-template-columns: 1fr; }
+.actions-span-1 { grid-column: span 1; }
+.actions-span-2 { grid-column: span 2; }
+.actions-span-3 { grid-column: span 3; }
+
+@media (max-width: 768px) {
+  .auto-form,
+  .cols-1,
+  .cols-2,
+  .cols-3 {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .actions-span-1,
+  .actions-span-2,
+  .actions-span-3,
+  .form-actions {
+    grid-column: span 1 !important;
+  }
 }
 
 .form-actions {

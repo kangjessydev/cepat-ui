@@ -1,5 +1,5 @@
 <template>
-  <div class="form-field-wrapper" :style="{ gridColumn: `span ${field.span ?? 1}` }">
+  <div :class="['form-field-wrapper', `col-span-${field.span ?? 1}`]">
     <!-- Label -->
     <label v-if="field.type !== 'checkbox' && field.type !== 'toggle' && field.label" :for="fieldId" class="field-label">
       {{ field.label }}
@@ -111,28 +111,78 @@
       </label>
     </div>
 
-    <!-- DATE / DATETIME -->
-    <input
-      v-else-if="['date','datetime'].includes(field.type)"
+    <!-- DATE / DATETIME (Custom Cepat popover or native fallback) -->
+    <BaseDatePicker
+      v-else-if="['date', 'datetime'].includes(field.type)"
       :id="fieldId"
       v-model="internalValue"
-      :type="field.type === 'datetime' ? 'datetime-local' : 'date'"
-      class="field-input"
-      :class="{ error: !!error }"
+      :type="field.type === 'datetime' ? 'datetime' : 'date'"
+      :native="field.native ?? false"
+      :placeholder="field.placeholder ?? (field.type === 'datetime' ? 'Select date & time...' : 'Select date...')"
       :disabled="field.disabled"
+      :min-date="field.minDate"
+      :max-date="field.maxDate"
+      :has-error="!!error"
       @blur="validate"
+      @change="validate"
     />
 
-    <!-- FILE -->
-    <input
-      v-else-if="field.type === 'file'"
-      :id="fieldId"
-      type="file"
-      class="field-file"
-      :class="{ error: !!error }"
-      :disabled="field.disabled"
-      @change="(e) => { internalValue = (e.target as HTMLInputElement).files?.[0] ?? null; validate() }"
-    />
+    <!-- FILE UPLOAD DROPZONE -->
+    <div v-else-if="field.type === 'file'" class="file-upload-container">
+      <input
+        :id="fieldId"
+        ref="fileInputRef"
+        type="file"
+        class="hidden-file-input"
+        :disabled="field.disabled"
+        @change="handleFileChange"
+      />
+
+      <!-- When a file is already selected -->
+      <div v-if="selectedFile" class="file-preview-card">
+        <div class="file-preview-info">
+          <div class="file-icon-box">
+            <FileText :size="20" class="file-icon" />
+          </div>
+          <div class="file-meta">
+            <span class="file-name">{{ selectedFile.name }}</span>
+            <span v-if="selectedFile.size" class="file-size">{{ formatFileSize(selectedFile.size) }}</span>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="file-remove-btn"
+          title="Remove file"
+          :disabled="field.disabled"
+          @click.stop="clearFile"
+        >
+          <X :size="16" />
+        </button>
+      </div>
+
+      <!-- Drag and drop zone when no file selected -->
+      <div
+        v-else
+        class="file-dropzone"
+        :class="{ dragging: isDragging, error: !!error, disabled: field.disabled }"
+        @click="triggerFileInput"
+        @dragover.prevent="isDragging = true"
+        @dragleave.prevent="isDragging = false"
+        @drop.prevent="handleFileDrop"
+      >
+        <div class="dropzone-icon">
+          <UploadCloud :size="24" />
+        </div>
+        <div class="dropzone-text">
+          <span class="dropzone-prompt">
+            <strong>Click to upload</strong> or drag and drop
+          </span>
+          <span class="dropzone-hint">
+            {{ field.placeholder ?? 'SVG, PNG, JPG, PDF or document (max. 10MB)' }}
+          </span>
+        </div>
+      </div>
+    </div>
 
     <!-- Error message -->
     <p v-if="error" class="field-error">{{ error }}</p>
@@ -140,7 +190,8 @@
 </template>
 
 <script setup lang="ts">
-import { Check, Eye, EyeOff } from '@lucide/vue'
+import { Check, Eye, EyeOff, UploadCloud, FileText, X } from '@lucide/vue'
+import BaseDatePicker from '@/components/BaseDatePicker.vue'
 import type { FieldSchema, SelectOption } from './types'
 
 const props = defineProps<{
@@ -206,11 +257,92 @@ function validate() {
   return true
 }
 
+// File upload helpers
+const fileInputRef = ref<HTMLInputElement | null>(null)
+const isDragging = ref(false)
+
+const selectedFile = computed(() => {
+  const val = internalValue.value
+  if (!val) return null
+  if (val instanceof File) {
+    return { name: val.name, size: val.size }
+  }
+  if (typeof val === 'object' && 'name' in (val as Record<string, unknown>)) {
+    return {
+      name: String((val as Record<string, unknown>).name),
+      size: Number((val as Record<string, unknown>).size ?? 0),
+    }
+  }
+  if (typeof val === 'string' && val.trim().length > 0) {
+    return { name: val, size: 0 }
+  }
+  return null
+})
+
+function triggerFileInput() {
+  if (props.field.disabled) return
+  fileInputRef.value?.click()
+}
+
+function handleFileChange(e: Event) {
+  const target = e.target as HTMLInputElement
+  const file = target.files?.[0] ?? null
+  internalValue.value = file
+  validate()
+}
+
+function handleFileDrop(e: DragEvent) {
+  isDragging.value = false
+  if (props.field.disabled) return
+  const file = e.dataTransfer?.files?.[0] ?? null
+  if (file) {
+    internalValue.value = file
+    validate()
+  }
+}
+
+function clearFile() {
+  internalValue.value = null
+  if (fileInputRef.value) {
+    fileInputRef.value.value = ''
+  }
+  validate()
+}
+
+function formatFileSize(bytes: number) {
+  if (!bytes) return ''
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(2) + ' MB'
+}
+
 defineExpose({ validate })
 </script>
 
 <style scoped>
-.form-field-wrapper { display: flex; flex-direction: column; gap: 0.375rem; }
+.form-field-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.col-span-1 { grid-column: span 1; }
+.col-span-2 { grid-column: span 2; }
+.col-span-3 { grid-column: span 3; }
+.col-span-full { grid-column: 1 / -1; }
+
+@media (max-width: 768px) {
+  .col-span-1,
+  .col-span-2,
+  .col-span-3,
+  .col-span-full,
+  .form-field-wrapper {
+    grid-column: span 1 !important;
+  }
+}
 
 .field-label {
   font-size: 0.8125rem;
@@ -407,11 +539,178 @@ input.field-input.error { border-color: #ef4444; }
 .radio-label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: var(--text-secondary); cursor: pointer; }
 .radio-input { accent-color: #10b981; width: 15px; height: 15px; cursor: pointer; }
 
-.field-file {
+.file-upload-container {
   width: 100%;
-  padding: 0.375rem 0;
+}
+
+.hidden-file-input {
+  display: none;
+}
+
+.file-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  padding: 1.5rem 1rem;
+  background: var(--bg-surface-raised);
+  border: 2px dashed var(--border-color);
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.file-dropzone:hover {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.03);
+}
+
+.file-dropzone.dragging {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.08);
+  transform: scale(1.01);
+}
+
+.file-dropzone.error {
+  border-color: #ef4444;
+}
+
+.file-dropzone.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.dropzone-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #ecfdf5;
+  color: #059669;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+:root.dark .dropzone-icon,
+.dark .dropzone-icon {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+.file-dropzone:hover .dropzone-icon {
+  transform: translateY(-2px);
+}
+
+.dropzone-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dropzone-prompt {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.dropzone-prompt strong {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.dropzone-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* File selected preview card */
+.file-preview-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  gap: 0.75rem;
+  transition: border-color 0.15s;
+}
+
+.file-preview-card:hover {
+  border-color: #10b981;
+}
+
+.file-preview-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  overflow: hidden;
+}
+
+.file-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #ecfdf5;
+  color: #059669;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+:root.dark .file-icon-box,
+.dark .file-icon-box {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+.file-meta {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.file-name {
   font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-size {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
+.file-remove-btn {
+  border: none;
+  background: transparent;
   color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.375rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.file-remove-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+:root.dark .file-remove-btn:hover,
+.dark .file-remove-btn:hover {
+  background: rgba(220, 38, 38, 0.2);
+  color: #f87171;
 }
 
 .field-error { font-size: 0.75rem; color: #ef4444; margin: 0; }

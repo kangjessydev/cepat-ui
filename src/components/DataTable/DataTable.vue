@@ -62,20 +62,13 @@
         <thead>
           <tr>
             <!-- Checkbox column -->
-            <th v-if="selectable" class="th th-check">
-              <label class="custom-checkbox" @click.stop>
-                <input
-                  type="checkbox"
-                  class="checkbox-native"
-                  :checked="allSelected"
-                  :indeterminate="someSelected && !allSelected"
-                  @change="toggleAll"
-                />
+            <th v-if="selectable" class="th th-check" @click="toggleAll">
+              <div class="custom-checkbox" :title="allSelected ? 'Deselect all' : 'Select all'">
                 <span class="checkbox-box" :class="{ checked: allSelected, indeterminate: someSelected && !allSelected }">
                   <Check v-if="allSelected" :size="12" class="check-icon" />
                   <Minus v-else-if="someSelected" :size="12" class="minus-icon" />
                 </span>
-              </label>
+              </div>
             </th>
 
             <th
@@ -115,11 +108,11 @@
           <!-- Loading skeleton -->
           <template v-else-if="loading">
             <tr v-for="i in pagination.perPage" :key="i" class="skeleton-row">
-              <td v-if="selectable" class="td-check"><div class="skeleton" style="width:15px;height:15px;border-radius:3px" /></td>
+              <td v-if="selectable" class="td-check"><div class="skeleton skeleton-checkbox" /></td>
               <td v-for="col in visibleColumns" :key="col.key" class="td">
                 <div class="skeleton" :style="{ width: `${Math.random() * 40 + 40}%` }" />
               </td>
-              <td v-if="actions.length" class="td-actions"><div class="skeleton" style="width:60px" /></td>
+              <td v-if="actions.length" class="td-actions"><div class="skeleton skeleton-action" /></td>
             </tr>
           </template>
 
@@ -133,17 +126,11 @@
             @click="selectable ? toggleRow(row) : undefined"
           >
             <td v-if="selectable" class="td-check" @click.stop="toggleRow(row)">
-              <label class="custom-checkbox" @click.stop>
-                <input
-                  type="checkbox"
-                  class="checkbox-native"
-                  :checked="isSelected(row)"
-                  @change="toggleRow(row)"
-                />
+              <div class="custom-checkbox">
                 <span class="checkbox-box" :class="{ checked: isSelected(row) }">
                   <Check v-if="isSelected(row)" :size="12" class="check-icon" />
                 </span>
-              </label>
+              </div>
             </td>
 
             <td
@@ -304,26 +291,45 @@ function toggleSort(key: string) {
 }
 
 // Selection
+function getRowId(row: T, index?: number): string | number {
+  if (props.rowKey) {
+    if (typeof props.rowKey === 'function') return props.rowKey(row)
+    const val = row[props.rowKey]
+    if (val !== undefined && val !== null) return String(val)
+  }
+  if (row && typeof row === 'object' && 'id' in row && row.id !== undefined && row.id !== null) {
+    return String(row.id)
+  }
+  return index !== undefined ? index : JSON.stringify(row)
+}
+
+function isSelected(row: T): boolean {
+  const id = getRowId(row)
+  return selectedRows.value.some((r, i) => getRowId(r, i) === id)
+}
+
 const allSelected = computed(() => paginatedData.value.length > 0 && paginatedData.value.every(isSelected))
 const someSelected = computed(() => paginatedData.value.some(isSelected) && !allSelected.value)
 
-function isSelected(row: T) { return selectedRows.value.includes(row) }
-
 function toggleRow(row: T) {
-  const idx = selectedRows.value.indexOf(row)
-  if (idx === -1) selectedRows.value.push(row)
-  else selectedRows.value.splice(idx, 1)
+  const id = getRowId(row)
+  const exists = selectedRows.value.some((r, i) => getRowId(r, i) === id)
+  if (exists) {
+    selectedRows.value = selectedRows.value.filter((r, i) => getRowId(r, i) !== id)
+  } else {
+    selectedRows.value = [...selectedRows.value, row]
+  }
   emit('select', selectedRows.value)
 }
 
 function toggleAll() {
   if (allSelected.value) {
-    paginatedData.value.forEach(row => {
-      const idx = selectedRows.value.indexOf(row)
-      if (idx !== -1) selectedRows.value.splice(idx, 1)
-    })
+    const pageIds = new Set(paginatedData.value.map((r, i) => getRowId(r, i)))
+    selectedRows.value = selectedRows.value.filter((r, i) => !pageIds.has(getRowId(r, i)))
   } else {
-    paginatedData.value.forEach(row => { if (!isSelected(row)) selectedRows.value.push(row) })
+    const currentIds = new Set(selectedRows.value.map((r, i) => getRowId(r, i)))
+    const toAdd = paginatedData.value.filter((r, i) => !currentIds.has(getRowId(r, i)))
+    selectedRows.value = [...selectedRows.value, ...toAdd]
   }
   emit('select', selectedRows.value)
 }
@@ -690,6 +696,18 @@ onMounted(() => {
   animation: shimmer 1.5s infinite;
 }
 @keyframes shimmer { to { background-position: -200% 0; } }
+
+.skeleton-checkbox {
+  width: 15px;
+  height: 15px;
+  border-radius: 3px;
+  margin: 0 auto;
+}
+
+.skeleton-action {
+  width: 60px;
+  margin-left: auto;
+}
 
 /* Pagination */
 .table-pagination {

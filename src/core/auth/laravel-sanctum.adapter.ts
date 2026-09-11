@@ -63,7 +63,7 @@ export class LaravelSanctumAdapter implements AuthAdapter {
 
   constructor(options: SanctumAdapterOptions = {}) {
     this.opts = {
-      baseURL: options.baseURL ?? import.meta.env.VITE_API_URL ?? 'http://localhost:8000',
+      baseURL: options.baseURL ?? import.meta.env.VITE_API_URL ?? import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000',
       csrfEndpoint: options.csrfEndpoint ?? '/sanctum/csrf-cookie',
       loginEndpoint: options.loginEndpoint ?? '/login',
       logoutEndpoint: options.logoutEndpoint ?? '/logout',

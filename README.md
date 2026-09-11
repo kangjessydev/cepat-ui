@@ -1,293 +1,420 @@
-# Cepat UI ⚡🇮🇩
+# Cepat UI
 
-> **Vue 3 Dashboard Starter Template** dengan filosofi developer experience semudah **Laravel Filament**: tambah halaman, menu sidebar, dan resource full CRUD cukup dengan satu perintah CLI atau satu file schema.
-
-![Vue 3](https://img.shields.io/badge/Vue-3.5-42b883?style=flat-square&logo=vue.js)
-![Vite](https://img.shields.io/badge/Vite-8.3-646cff?style=flat-square&logo=vite)
-![TypeScript](https://img.shields.io/badge/TypeScript-Strict-3178c6?style=flat-square&logo=typescript)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38bdf8?style=flat-square&logo=tailwindcss)
-![Pinia](https://img.shields.io/badge/Pinia-v4-ffd859?style=flat-square)
+Vue 3 dashboard starter template dengan arsitektur modular, design system berbasis Tailwind CSS v4 & CSS Variables, schema-driven form builder, dan backend-agnostic authentication adapter.
 
 ---
 
-## 🌟 Fitur Utama
+## Daftar Isi
 
-- ⚡ **Filament-like DX (CLI Generator)**:
-  Buat halaman atau resource CRUD lengkap hanya dengan `npm run cepat make:crud <Resource>`. File page, routing Vue Router, dan sidebar navigation otomatis ter-register tanpa coding manual.
-- 🎨 **Modern Design System (Slate + Emerald)**:
-  Dark mode bawaan yang halus, glassmorphism, responsive collapsible multi-level sidebar, auto-generated breadcrumbs, dan dynamic toast notification.
-- 🔐 **Agnostic Auth Adapter System**:
-  Auth logic terpisah dari UI melalui Adapter Pattern. Ganti dari **Mock Auth** (untuk development/demo) ke **Laravel Sanctum** (cookie/CSRF based) atau custom backend hanya di `src/plugins/auth.ts`.
-- 📋 **DataTable Component**:
-  Table bertenaga dengan live search, multi-column sorting, pagination dengan ellipsis, column toggle (hide/show), selection checkbox, dan bulk actions.
-- 📝 **AutoForm Builder**:
-  Bangun form validasi lengkap hanya dari TypeScript schema object (mendukung text, email, password, number, select, multiselect, textarea, checkbox, toggle, radio, date, file).
-- 🧩 **Zero-Boilerplate Auto-Imports**:
-  Semua composables (`useAuth`, `useToast`, `useRouter`, `ref`, `computed`) dan UI components (`BaseButton`, `BaseModal`, `DataTable`, `AutoForm`, dll.) ter-import secara otomatis.
-- ⌨️ **VS Code Snippets**:
-  Ketik `cepat-page`, `cepat-crud`, `cepat-table`, atau `cepat-form` untuk men-scaffold template dalam hitungan detik.
+- [Fitur Utama](#fitur-utama)
+- [Memulai Cepat](#memulai-cepat)
+- [Akun Demo Bawaan](#akun-demo-bawaan)
+- [Komponen UI & Showcase](#komponen-ui--showcase)
+- [AutoForm](#autoform)
+- [DataTable](#datatable)
+- [DatePicker & BottomSheet](#datepicker--bottomsheet)
+- [CLI Generator](#cli-generator)
+- [Integrasi Backend & Autentikasi](#integrasi-backend--autentikasi)
+- [Menambah Halaman & Menu Manual](#menambah-halaman--menu-manual)
+- [Struktur Direktori](#struktur-direktori)
+- [Perintah Tersedia](#perintah-tersedia)
+- [Lisensi](#lisensi)
 
 ---
 
-## 🚀 Quick Start
+## Fitur Utama
 
-### 1. Clone & Install
+- **Vue 3 + TypeScript Strict**: Dibangun di atas Vue 3 (Composition API, `<script setup>`) dan TypeScript dengan pemeriksaan tipe ketat (`vue-tsc`).
+- **Design System & Dark Mode**: Skema warna Slate + Emerald menggunakan CSS variables murni tanpa utility class ad-hoc yang mengotori template. Mode gelap otomatis tersinkronisasi.
+- **UI Kit Primitives**: Menyediakan `BaseButton`, `BaseBadge`, `BaseCard`, `BaseAlert`, `BaseModal`, `BaseBottomSheet`, `BaseTabs`, dan `BaseDatePicker`.
+- **Schema-Driven AutoForm**: Membuat form lengkap beserta validasi, multi-kolom grid, responsive collapse, dan 12+ jenis input hanya melalui deklarasi objek schema TypeScript.
+- **Data Table Lengkap**: Dilengkapi pencarian real-time, pengurutan multi-kolom, pagination dinamis, seleksi baris (bulk action), dan kolom toggle (sembunyikan/tampilkan).
+- **Backend Adapter Pattern**: UI tidak terikat pada framework backend tertentu. Beralih dari Mock Auth ke Laravel Sanctum atau REST API kustom hanya dengan satu perintah CLI.
+- **CLI Generator**: Scaffold resource CRUD lengkap, halaman baru, atau komponen dengan integrasi routing otomatis.
+- **Auto-Imports**: Modul Vue, Vue Router, Pinia, dan komponen UI di-import otomatis via `unplugin-auto-import` dan `unplugin-vue-components`.
+
+---
+
+## Memulai Cepat
+
+### 1. Kloning Repository & Instalasi Dependensi
+
 ```bash
-git clone <repo-url>
-cd starter
+git clone https://github.com/kangjessydev/cepat-ui.git
+cd cepat-ui
 npm install
 ```
 
-### 2. Jalankan Dev Server
+### 2. Jalankan Development Server
+
 ```bash
 npm run dev
 ```
-Buka browser di: **`http://localhost:5173`**
 
-### 3. Akun Demo (Mock Auth Adapter)
-Template sudah dilengkapi 2 akun demo bawaan:
+Buka peramban pada alamat `http://localhost:5173`.
 
-| Role | Email | Password | Hak Akses |
-|---|---|---|---|
-| **Admin** | `admin@cepat.dev` | `password123` | Akses penuh (Dashboard, Users, Products, Settings) |
-| **User** | `user@cepat.dev` | `password123` | Akses terbatas (menu admin tidak muncul) |
+### 3. Build untuk Produksi
 
-*(Pada halaman login, klik tombol "Fill Admin" atau "Fill User" untuk auto-fill demo credentials).*
+```bash
+npm run build
+```
 
 ---
 
-## 🛠️ Cepat UI CLI Generator
+## Akun Demo Bawaan
 
-Cepat UI dilengkapi CLI bawaan di `bin/cepat.mjs` untuk mempercepat pembuatan modul.
+Secara default, aplikasi berjalan menggunakan **Mock Auth Adapter** (data tersimpan in-memory, tidak membutuhkan database untuk uji coba).
+
+| Role | Email | Password | Cakupan Akses |
+|---|---|---|---|
+| **Admin** | `admin@cepat.dev` | `password123` | Akses penuh (Dashboard, Users, Products, Settings, UI Kit) |
+| **User** | `user@cepat.dev` | `password123` | Akses terbatas (menu admin disembunyikan otomatis) |
+
+*Catatan: Pada halaman login terdapat tombol shortcut untuk mengisi kredensial secara otomatis.*
+
+---
+
+## Komponen UI & Showcase
+
+Cepat UI menyertakan halaman katalog interaktif untuk melihat seluruh komponen yang siap pakai:
+
+- **UI Components Catalog**: `http://localhost:5173/ui/components`
+- **AutoForm Playground**: `http://localhost:5173/ui/forms`
+
+### Ringkasan Komponen Dasar
+
+| Komponen | File Path | Opsi / Varian |
+|---|---|---|
+| `BaseButton` | `src/components/BaseButton.vue` | Varian: `primary`, `secondary`, `outline`, `ghost`, `danger`. Ukuran: `sm`, `md`, `lg`. State: `loading`, `disabled`. Slot icon prefix/suffix. |
+| `BaseBadge` | `src/components/BaseBadge.vue` | Varian: `default`, `primary`, `success`, `warning`, `danger`. Opsi indikator titik (`dot`). |
+| `BaseCard` | `src/components/BaseCard.vue` | Varian: `default`, `elevated`, `bordered`. Padding: `none`, `sm`, `md`, `lg`. Slot: `header`, `header-actions`, `default`, `footer`. |
+| `BaseAlert` | `src/components/BaseAlert.vue` | Varian: `info`, `success`, `warning`, `danger`. Opsi dismissible dengan tombol tutup. |
+| `BaseTabs` | `src/components/BaseTabs.vue` | Varian: `pills`, `underline`. Mendukung icon, count badge, dan swipe scroll pada layar mobile. |
+| `BaseModal` | `src/components/BaseModal.vue` | Dialog modal terpusat. Ukuran: `sm`, `md`, `lg`, `xl`, `full`. Mendukung backdrop blur, tombol Escape, dan `persistent`. |
+| `BaseBottomSheet` | `src/components/BaseBottomSheet.vue` | Drawer slide-up mobile. Mendukung touch swipe gesture dismiss, grab handle, dan backdrop lock. |
+| `BaseDatePicker` | `src/components/BaseDatePicker.vue` | Kalender custom popover dengan smart auto-flip (ke atas/bawah sesuai ruang layar) atau fallback picker native browser (`native: true`). |
+| `StatCard` | `src/components/StatCard.vue` | Kartu metrik dengan trend persentase indikator (+/-) dan icon dinamis. |
+
+---
+
+## AutoForm
+
+`AutoForm` memungkinkan pembuatan form dinamis berskala besar tanpa perlu menulis boilerplate elemen input satu per satu.
+
+### Contoh Penggunaan
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+import { AutoForm, type FormSchema } from '@/components/AutoForm'
+
+const formData = ref({
+  fullName: '',
+  email: '',
+  role: 'member',
+  agree: false,
+})
+
+const schema: FormSchema = {
+  columns: 2,
+  submitLabel: 'Simpan Data',
+  cancelLabel: 'Batal',
+  fields: [
+    {
+      name: 'fullName',
+      label: 'Nama Lengkap',
+      type: 'text',
+      placeholder: 'Masukkan nama lengkap',
+      required: true,
+      span: 1,
+    },
+    {
+      name: 'email',
+      label: 'Alamat Email',
+      type: 'email',
+      placeholder: 'nama@domain.com',
+      required: true,
+      span: 1,
+    },
+    {
+      name: 'role',
+      label: 'Role Akun',
+      type: 'select',
+      options: [
+        { label: 'Admin', value: 'admin' },
+        { label: 'Member', value: 'member' },
+      ],
+      span: 2,
+    },
+    {
+      name: 'agree',
+      label: 'Saya menyetujui syarat & ketentuan',
+      type: 'checkbox',
+      required: true,
+      span: 2,
+    },
+  ],
+}
+
+function handleSubmit(values: Record<string, unknown>) {
+  console.log('Submitted values:', values)
+}
+</script>
+
+<template>
+  <AutoForm
+    v-model="formData"
+    :schema="schema"
+    @submit="handleSubmit"
+  />
+</template>
+```
+
+### Tipe Field yang Didukung
+`text`, `email`, `password`, `number`, `tel`, `url`, `textarea`, `select`, `checkbox`, `toggle`, `radio`, `date`, `datetime`, `file`, `hidden`.
+
+---
+
+## DataTable
+
+`DataTable` menyediakan tabel data berbasis client atau server-ready dengan fitur lengkap.
+
+### Contoh Penggunaan
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+import { DataTable, type DataTableColumn } from '@/components/DataTable'
+
+const columns: DataTableColumn[] = [
+  { key: 'name', label: 'Nama', sortable: true, searchable: true },
+  { key: 'role', label: 'Role', sortable: true },
+  { key: 'status', label: 'Status' },
+  { key: 'createdAt', label: 'Tanggal Dibuat', sortable: true },
+]
+
+const users = ref([
+  { id: 1, name: 'Jessy', role: 'admin', status: 'Active', createdAt: '2026-01-10' },
+  { id: 2, name: 'Alex', role: 'editor', status: 'Inactive', createdAt: '2026-02-14' },
+])
+
+const selectedRows = ref([])
+</script>
+
+<template>
+  <DataTable
+    :data="users"
+    :columns="columns"
+    v-model:selected="selectedRows"
+    searchable
+    selectable
+    exportable
+  />
+</template>
+```
+
+---
+
+## DatePicker & BottomSheet
+
+`BaseDatePicker` mengadopsi filosofi Filament:
+1. **Mode Custom (Default, `native: false`)**: Popover kalender kustom yang di-teleport langsung ke `body`. Komponen secara otomatis mendeteksi ruang layar (auto-flip ke atas bila ruang bawah sempit) sehingga tidak terpotong oleh overflow kontainer.
+2. **Mode Native (`native: true`)**: Menggunakan input date bawaan sistem operasi browser pengguna.
+3. **Responsif Mobile**: Pada viewport layar sempit (`<= 640px`), kalender custom otomatis beralih menjadi `BaseBottomSheet` yang dapat ditutup dengan gesture swipe ke bawah.
+
+```vue
+<!-- Kalender custom popover dengan smart flip -->
+<BaseDatePicker v-model="targetDate" placeholder="Pilih tanggal rilis..." />
+
+<!-- Fallback native browser -->
+<BaseDatePicker v-model="targetDate" native />
+```
+
+---
+
+## CLI Generator
+
+Cepat UI menyediakan antarmuka CLI melalui script `bin/cepat.mjs`:
 
 ```bash
 npm run cepat -- <command> [options]
 ```
 
-### 1. `make:page` — Buat Halaman Baru
-Membuat file `.vue` dan **otomatis mendaftarkannya** ke `src/core/router/index.ts` dan `src/core/router/navigation.ts`:
-
-```bash
-# Halaman sederhana
-npm run cepat -- make:page Reports --icon=FileSpreadsheet
-
-# Halaman khusus role admin
-npm run cepat -- make:page AuditLog --icon=ShieldCheck --roles=admin
-
-# Halaman bersarang (sub-menu) di bawah Settings
-npm run cepat -- make:page Security --parent=Settings
-```
-
-### 2. `make:crud` — Buat Full CRUD Resource
-Membuat resource halaman lengkap dengan **DataTable**, **AutoForm modal (Create & Edit)**, **Delete confirmation**, **Search**, **Sorting**, **Pagination**, dan **Bulk Actions**:
+### 1. `make:crud` — Scaffold Full CRUD Resource
+Menghasilkan halaman manajemen data lengkap dengan `DataTable`, form modal (Create/Edit), dialog konfirmasi hapus, pencarian, dan sorting. File routing dan menu navigasi otomatis didaftarkan.
 
 ```bash
 # CRUD standar
-npm run cepat -- make:crud Products --icon=Package
+npm run cepat -- make:crud Customers --icon=Users
 
-# CRUD dengan definisi field kustom dan role restriction
-npm run cepat -- make:crud Orders --icon=ShoppingCart --fields=customer:text,total:number,category:select,status:select --roles=admin
+# CRUD dengan schema kolom dan batasan role admin
+npm run cepat -- make:crud Orders --icon=ShoppingCart --fields=customer:text,total:number,status:select --roles=admin
 ```
 
-### 3. `make:component` — Buat Komponen Vue
+### 2. `make:page` — Buat Halaman Kosong
+Membuat file halaman Vue dan otomatis menyematkannya ke sidebar navigation.
+
 ```bash
-npm run cepat -- make:component MetricCard
+# Halaman root
+npm run cepat -- make:page Analytics --icon=BarChart2
+
+# Halaman bersarang (sub-menu di bawah Settings)
+npm run cepat -- make:page Security --parent=Settings
 ```
 
-### 4. `make:adapter` — Buat Auth Adapter Baru
+### 3. `use:backend` — Beralih Adapter Backend
+Mengubah adapter aktif di `src/plugins/auth.ts` dan memperbarui URL API pada berkas `.env`.
+
 ```bash
-npm run cepat -- make:adapter Supabase
+# Mengaktifkan backend Laravel Sanctum
+npm run cepat -- use:backend sanctum
+
+# Mengaktifkan backend Laravel dengan custom host/port
+npm run cepat -- use:backend sanctum --url=http://localhost:8080
+
+# Mengembalikan ke Mock Adapter (in-memory)
+npm run cepat -- use:backend mock
 ```
 
-### 5. `list:routes` — Lihat Daftar Menu Aktif
+### 4. `list:routes` — Tinjau Daftar Rute Aktif
 ```bash
 npm run cepat -- list:routes
 ```
 
 ---
 
-## 🧭 Cara Menambah Menu Secara Manual
+## Integrasi Backend & Autentikasi
 
-Jika tidak menggunakan CLI, menambah menu hanya butuh 2 langkah:
+Arsitektur autentikasi Cepat UI menggunakan pola Adapter (`AuthAdapter`). Kode UI tidak pernah memanggil endpoint auth secara langsung, melainkan melalui antarmuka adapter:
 
-### 1. Buat Halaman di `src/pages/<nama>/index.vue`
-```vue
-<template>
-  <div class="page-container">
-    <h1 class="page-title">Halaman Baru</h1>
-  </div>
-</template>
+```
+[UI Components / Pages]
+         │
+         ▼
+    [useAuth()]
+         │
+         ▼
+   [authAdapter]  ── (Interface: login, logout, me, register)
+         │
+    ┌────┴────────────────────────┐
+    ▼                             ▼
+[MockAuthAdapter]     [LaravelSanctumAdapter]
+(In-memory array)     (Cookie/CSRF SPA Session)
 ```
 
-### 2. Tambah ke `src/core/router/navigation.ts`
-```typescript
-export const navigationItems: NavItem[] = [
-  // ...
-  {
-    title: 'Halaman Baru',
-    icon: 'Sparkles',       // Nama icon Lucide
-    route: '/halaman-baru',
-    roles: ['admin'],       // Opsional: RBAC
-  },
-]
+### Menggunakan Laravel Sanctum
+
+Starter ini menyertakan template companion backend siap pakai di folder [`examples/backend-laravel/`](examples/backend-laravel/):
+- `AuthController.php`: Endpoint login, register, me, dan logout yang sesuai dengan kontrak User Cepat UI.
+- `routes-api.php`: Definisi rute autentikasi Laravel.
+- `cors.php`: Konfigurasi CORS dengan `supports_credentials => true`.
+
+Untuk beralih:
+```bash
+npm run cepat -- use:backend sanctum
 ```
-Route dan menu sidebar akan langsung muncul otomatis!
+Pastikan backend Laravel Anda berjalan pada port yang sesuai (`php artisan serve`).
 
----
+### Menggunakan useAuth() di Komponen
 
-## 🔐 Auth Adapter System
-
-Arsitektur autentikasi Cepat UI tidak mengikat Anda ke satu backend. Semua logic auth diatur via `AuthAdapter`.
-
-### Adapter Bawaan:
-1. **`MockAuthAdapter`** (`src/core/auth/mock.adapter.ts`):
-   Menggunakan in-memory data, ideal untuk prototyping cepat tanpa backend.
-2. **`LaravelSanctumAdapter`** (`src/core/auth/laravel-sanctum.adapter.ts`):
-   Siap pakai untuk backend Laravel dengan cookie-based SPA authentication (CSRF protection + `/sanctum/csrf-cookie`).
-
-### Mengganti Adapter:
-Buka file [`src/plugins/auth.ts`](file:///home/kangjessy/Documents/projects/starter/src/plugins/auth.ts):
-```typescript
-// Ganti adapter di sini:
-import { mockAuthAdapter } from '@/core/auth/mock.adapter'
-// import { laravelSanctumAdapter } from '@/core/auth/laravel-sanctum.adapter'
-
-export const authAdapter: AuthAdapter = mockAuthAdapter
-```
-
-### Menggunakan Auth di Komponen:
 ```vue
 <script setup lang="ts">
+import { useAuth } from '@/core/composables/useAuth'
+
 const { user, isAuthenticated, hasRole, can, logout } = useAuth()
 </script>
 
 <template>
   <div>
-    <p>Halo, {{ user?.name }}</p>
-    <button v-if="can('users.create')">Tambah User</button>
+    <p v-if="isAuthenticated">Masuk sebagai: {{ user?.name }}</p>
+    <button v-if="can('users.create')">Buat Pengguna</button>
+    <button @click="logout">Keluar</button>
   </div>
 </template>
 ```
 
 ---
 
-## 🧩 Komponen UI Utama
+## Menambah Halaman & Menu Manual
 
-| Komponen | Deskripsi |
-|---|---|
-| [`BaseButton`](file:///home/kangjessy/Documents/projects/starter/src/components/BaseButton.vue) | Variant: `primary`, `secondary`, `outline`, `ghost`, `danger`. Size: `sm`, `md`, `lg`, `icon`. Loading state. |
-| [`BaseBadge`](file:///home/kangjessy/Documents/projects/starter/src/components/BaseBadge.vue) | Variant: `default`, `primary`, `success`, `warning`, `danger`, `info`, `outline`. Optional dot indicator. |
-| [`BaseModal`](file:///home/kangjessy/Documents/projects/starter/src/components/BaseModal.vue) | Dialog accessible dengan backdrop blur, escape key, focus trap, dan size preset (`sm`, `md`, `lg`, `xl`, `full`). |
-| [`DataTable`](file:///home/kangjessy/Documents/projects/starter/src/components/DataTable/DataTable.vue) | Data table lengkap: live search, multi-col sort, pagination, column toggler, bulk selection. |
-| [`AutoForm`](file:///home/kangjessy/Documents/projects/starter/src/components/AutoForm/AutoForm.vue) | Form generator dari schema JSON. Mendukung 12 tipe field, validasi regex/required/min/max/custom, dan multi-column layout. |
-| [`StatCard`](file:///home/kangjessy/Documents/projects/starter/src/components/StatCard.vue) | Widget statistik dengan nilai, trend percentage (+/-), dan dynamic icon Lucide. |
+Jika ingin menambahkan menu tanpa CLI:
 
----
-
-## ⌨️ VS Code Snippets
-
-Ekstensi snippets sudah terpasang di `.vscode/cepat-ui.code-snippets`:
-
-- `cepat-page` / `vd-page` — Scaffold layout halaman dashboard
-- `cepat-crud` / `vd-crud` — Scaffold halaman CRUD lengkap (DataTable + AutoForm modal)
-- `cepat-table` / `vd-table` — Definisi columns & row actions DataTable
-- `cepat-form` / `vd-form` — Definisi schema fields AutoForm
-- `cepat-stat` / `vd-stat` — Stat card widget
-- `cepat-modal` / `vd-modal` — Base modal dengan trigger & footer
-- `cepat-button` / `vd-btn` — Base button
-- `cepat-badge` / `vd-badge` — Base badge
-- `cepat-nav` / `vd-nav` — Object menu navigation
-
----
-
-## ⚙️ Konfigurasi (`src/app.config.ts`)
-
-Atur preferensi global aplikasi di [`src/app.config.ts`](file:///home/kangjessy/Documents/projects/starter/src/app.config.ts):
+1. Buat berkas halaman Vue baru di `src/pages/<nama>/index.vue`.
+2. Buka `src/core/router/navigation.ts`, tambahkan entri menu ke array `navigationItems`:
 
 ```typescript
-export const appConfig = {
-  name: 'Cepat UI',
-  description: 'Vue 3 Dashboard Starter Template',
-
-  sidebar: {
-    collapsible: true,
-    defaultCollapsed: false,
-    width: '260px',
+export const navigationItems: NavItem[] = [
+  // ...
+  {
+    title: 'Laporan Keuangan',
+    icon: 'Receipt',          // Nama icon Lucide
+    route: '/laporan',
+    roles: ['admin'],         // Opsional: batasan role
   },
-
-  auth: {
-    loginRoute: '/login',
-    defaultRedirect: '/dashboard',
-    persistStrategy: 'localStorage', // 'localStorage' | 'sessionStorage' | 'cookie'
-  },
-
-  features: {
-    darkMode: true,         // Aktifkan / matikan fitur dark mode
-    commandPalette: false,  // Quick launcher (Ctrl+K)
-    notifications: true,
-  },
-
-  theme: {
-    primary: 'emerald',
-    gray: 'slate',
-    radius: 'md',
-  },
-}
+]
 ```
+
+Menu dan rute akan otomatis aktif di sidebar dan sistem navigasi breadcrumb.
 
 ---
 
-## 📁 Struktur Direktori
+## Struktur Direktori
 
 ```
-starter/
+cepat-ui/
 ├── bin/
-│   └── cepat.mjs                 # ⚡ Cepat UI CLI Generator
+│   └── cepat.mjs                   # CLI tool generator
+├── examples/
+│   └── backend-laravel/            # Companion backend Laravel Sanctum
 ├── src/
-│   ├── app.config.ts             # ⚙️ Konfigurasi global aplikasi
-│   ├── components/               # 🧩 Reusable UI Components
-│   │   ├── AutoForm/             # Form builder dari schema
-│   │   ├── DataTable/            # Table dengan search, sort, pagination
-│   │   ├── BaseButton.vue
+│   ├── app.config.ts               # Konfigurasi branding dan preferensi app
+│   ├── components/                 # Komponen UI Cepat UI
+│   │   ├── AutoForm/               # Schema-driven dynamic form
+│   │   ├── DataTable/              # Data table dengan search, sort, pagination
+│   │   ├── BaseAlert.vue
 │   │   ├── BaseBadge.vue
+│   │   ├── BaseBottomSheet.vue
+│   │   ├── BaseButton.vue
+│   │   ├── BaseCard.vue
+│   │   ├── BaseDatePicker.vue
 │   │   ├── BaseModal.vue
+│   │   ├── BaseTabs.vue
 │   │   └── StatCard.vue
 │   ├── core/
-│   │   ├── auth/                 # Auth Adapters (Mock, Sanctum, Types)
-│   │   ├── components/           # Core Layout Components (Sidebar, Navbar, Breadcrumb, Toast)
-│   │   ├── composables/          # Core Composables (useAuth, useToast, useApi)
-│   │   ├── layouts/              # DashboardLayout, AuthLayout, BlankLayout
-│   │   ├── router/               # Vue Router & Navigation Tree (navigation.ts)
-│   │   └── stores/               # Pinia stores (auth, ui, toast)
-│   ├── pages/                    # 📄 Halaman Aplikasi
-│   │   ├── auth/                 # Login, Register, Forgot Password
-│   │   ├── dashboard/            # Dashboard overview
-│   │   ├── analytics/            # Analytics demo
-│   │   ├── users/                # Users management CRUD demo
-│   │   ├── products/             # Products CRUD (contoh hasil CLI generator)
-│   │   └── settings/             # Settings general
-│   └── plugins/                  # 🔌 Plugin initialization (auth adapter selector)
-├── .vscode/
-│   └── cepat-ui.code-snippets    # ⌨️ VS Code snippets
-└── package.json
+│   │   ├── auth/                   # Adapter & tipe autentikasi (Mock, Sanctum)
+│   │   ├── components/             # Layout shell (AppSidebar, AppNavbar, AppBreadcrumb, Toast)
+│   │   ├── composables/            # useAuth, useToast, useApi
+│   │   ├── layouts/                # DashboardLayout, AuthLayout, BlankLayout
+│   │   ├── router/                 # Vue Router setup & navigation tree
+│   │   └── stores/                 # Pinia stores (auth, ui, toast)
+│   ├── pages/                      # File-based view components
+│   │   ├── auth/                   # Login, Register, Forgot Password
+│   │   ├── dashboard/              # Halaman Dashboard
+│   │   ├── analytics/              # Halaman Analytics
+│   │   ├── users/                  # Manajemen Pengguna (CRUD)
+│   │   ├── products/               # Contoh Resource CRUD
+│   │   └── ui/                     # UI Kit Showcase (components & forms)
+│   └── plugins/
+│       └── auth.ts                 # Registry instance AuthAdapter aktif
+├── .env.example
+├── package.json
+└── tsconfig.json
 ```
 
 ---
 
-## 🧪 Validasi & Quality Check
+## Perintah Tersedia
 
-```bash
-# Type-check TypeScript (vue-tsc strict)
-npm run type-check
-
-# Production Build
-npm run build
-
-# Preview Production Build
-npm run preview
-```
+| Perintah | Fungsi |
+|---|---|
+| `npm run dev` | Menjalankan Vite development server lokal (`localhost:5173`) |
+| `npm run build` | Menjalankan type-check lalu mem-build bundle produksi |
+| `npm run preview` | Menjalankan preview lokal dari hasil build produksi |
+| `npm run type-check` | Menjalankan verifikasi tipe TypeScript (`vue-tsc -b --noEmit`) |
+| `npm run cepat` | Menjalankan Cepat UI CLI Generator |
 
 ---
 
-## 📄 Lisensi
-MIT License © 2026. Dibuat khusus untuk produktivitas maksimal.
+## Lisensi
+
+Proyek ini dilisensikan di bawah [MIT License](LICENSE).

@@ -40,7 +40,7 @@ ${c.cyan}${c.bold}   ___ ___ ___  _ _____   _   _ ___
   / __| __| _ \\/_\\_   _| | | | |_ _|
  | (__| _||  _/ _ \\| |   | |_| || | 
   \\___|___|_|/_/ \\_\\_|    \\___/|___|${c.reset}
-  ${c.dim}Cepat UI DX Generator v0.1.0${c.reset}
+  ${c.dim}Cepat UI DX Generator v1.0.0${c.reset}
 `
 
 // --- Argument parser ---
@@ -703,6 +703,65 @@ function listRoutes() {
   console.log('')
 }
 
+function useBackend(type, options) {
+  if (!type) {
+    console.log(`\n${c.bold}Usage:${c.reset} cepat use:backend <mock|sanctum>\n`)
+    process.exit(1)
+  }
+
+  const authPluginFile = path.join(ROOT, 'src/plugins/auth.ts')
+  const envFile = path.join(ROOT, '.env')
+
+  let envContent = fs.existsSync(envFile) ? fs.readFileSync(envFile, 'utf-8') : ''
+
+  if (type === 'mock') {
+    const pluginCode = `// src/plugins/auth.ts
+// Configured by: cepat use:backend mock
+import { MockAuthAdapter } from '@/core/auth'
+
+export const authAdapter = new MockAuthAdapter()
+`
+    fs.writeFileSync(authPluginFile, pluginCode, 'utf-8')
+    console.log(`\n${c.green}${c.bold}✓ Switched to Mock Auth Adapter${c.reset}`)
+    console.log(`  ${c.dim}Demo mode active. In-memory authentication.${c.reset}`)
+    console.log(`  ${c.dim}Accounts: admin@cepat.dev / password123 | user@cepat.dev / password123${c.reset}\n`)
+    return
+  }
+
+  if (type === 'sanctum' || type === 'laravel') {
+    const pluginCode = `// src/plugins/auth.ts
+// Configured by: cepat use:backend sanctum
+import { LaravelSanctumAdapter } from '@/core/auth'
+
+export const authAdapter = new LaravelSanctumAdapter()
+`
+    fs.writeFileSync(authPluginFile, pluginCode, 'utf-8')
+
+    const apiUrl = options.url || 'http://localhost:8000'
+    if (!envContent.includes('VITE_API_URL=')) {
+      envContent += `\n# Backend API URL\nVITE_API_URL=${apiUrl}\n`
+    } else {
+      envContent = envContent.replace(/VITE_API_URL=.*/, `VITE_API_URL=${apiUrl}`)
+    }
+    if (envContent.includes('VITE_API_BASE_URL=')) {
+      envContent = envContent.replace(/VITE_API_BASE_URL=.*/, `VITE_API_BASE_URL=${apiUrl}`)
+    }
+    fs.writeFileSync(envFile, envContent.trim() + '\n', 'utf-8')
+
+    console.log(`\n${c.green}${c.bold}🎉 Switched to Laravel Sanctum Auth Adapter!${c.reset}`)
+    console.log(`  ${c.cyan}Auth Adapter:${c.reset} src/plugins/auth.ts → LaravelSanctumAdapter`)
+    console.log(`  ${c.cyan}API Base URL:${c.reset} ${apiUrl} (saved in .env)`)
+    console.log(`\n${c.bold}Laravel Setup Checklist:${c.reset}`)
+    console.log(`  1. Copy starter backend from ${c.bold}examples/backend-laravel/${c.reset} to your Laravel project.`)
+    console.log(`  2. Ensure CORS is enabled for ${c.cyan}http://localhost:5173${c.reset} with credentials: true.`)
+    console.log(`  3. Start Laravel server: ${c.dim}php artisan serve${c.reset}\n`)
+    return
+  }
+
+  console.error(`${c.red}Unknown backend type: ${type}.${c.reset} Available types: mock, sanctum`)
+  process.exit(1)
+}
+
 function printHelp() {
   console.log(banner)
   console.log(`${c.bold}COMMANDS:${c.reset}
@@ -710,6 +769,7 @@ function printHelp() {
   ${c.cyan}make:crud <Name>${c.reset}       Generate a full CRUD resource (DataTable + AutoForm + Modals)
   ${c.cyan}make:component <Name>${c.reset}  Scaffold a reusable Vue component in src/components/
   ${c.cyan}make:adapter <Name>${c.reset}    Scaffold an auth adapter in src/core/auth/
+  ${c.cyan}use:backend <type>${c.reset}     Switch auth adapter (mock, sanctum) & setup .env
   ${c.cyan}list:routes${c.reset}            List all registered sidebar navigation items
 
 ${c.bold}OPTIONS:${c.reset}
@@ -729,8 +789,11 @@ ${c.bold}EXAMPLES:${c.reset}
   ${c.dim}# Full CRUD with custom fields & admin role:${c.reset}
   npx cepat make:crud Products --icon=Package --fields=name:text,price:number,category:select,status:select --roles=admin
 
-  ${c.dim}# Component:${c.reset}
-  npx cepat make:component MetricBadge
+  ${c.dim}# Switch backend to Laravel Sanctum:${c.reset}
+  npx cepat use:backend sanctum
+
+  ${c.dim}# Switch backend back to demo Mock Auth:${c.reset}
+  npx cepat use:backend mock
 `)
 }
 
@@ -752,6 +815,10 @@ switch (command) {
     break
   case 'make:adapter':
     makeAdapter(targetName, parsed.options)
+    break
+  case 'use:backend':
+  case 'backend':
+    useBackend(targetName, parsed.options)
     break
   case 'list:routes':
   case 'routes':

@@ -57,5 +57,27 @@ export const navigationItems: NavItem[] = [
     title: 'Products',
     icon: 'Package',
     route: '/products',
+    order: 3,
+  },
+
+  // --- UI Kit Showcase (Bootstrap-style reference) ---
+  {
+    title: 'UI Kit',
+    icon: 'Boxes',
+    order: 20,
+    badge: 'New',
+    badgeVariant: 'success',
+    children: [
+      {
+        title: 'Components',
+        icon: 'Component',
+        route: '/ui/components',
+      },
+      {
+        title: 'AutoForm',
+        icon: 'FormInput',
+        route: '/ui/forms',
+      },
+    ],
   },
 ]

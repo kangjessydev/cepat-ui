@@ -82,18 +82,18 @@
     </div>
 
     <!-- Bottom: DataTable of top pages -->
-    <div class="card" style="margin-top: 1.25rem">
-      <div style="padding: 1.25rem 1.25rem 0; display:flex; justify-content:space-between; align-items:center">
+    <div class="card table-card">
+      <div class="table-card-header">
         <h2 class="chart-title">Top Pages</h2>
         <BaseBadge variant="default">{{ activePeriod }}</BaseBadge>
       </div>
       <DataTable
         :data="topPages"
         :columns="pageColumns"
-        style="border: none; border-radius: 0; box-shadow: none"
+        class="borderless-table"
       >
         <template #cell-change="{ value }">
-          <span :style="{ color: (value as number) >= 0 ? '#16a34a' : '#dc2626', fontWeight: '500', fontSize: '0.8125rem' }">
+          <span :class="(value as number) >= 0 ? 'change-positive' : 'change-negative'">
             {{ (value as number) >= 0 ? '+' : '' }}{{ value }}%
           </span>
         </template>
@@ -170,13 +170,45 @@ const pageColumns: DataTableColumn<typeof topPages[0]>[] = [
 .period-tab.active { background: var(--bg-surface); color: var(--text-primary); box-shadow: var(--shadow-sm); }
 
 .stats-grid {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem;
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.25rem;
 }
-@media (max-width: 1200px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 640px) { .stats-grid { grid-template-columns: 1fr; } }
+@media (max-width: 1200px) { .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .stats-grid { grid-template-columns: minmax(0, 1fr); } }
 
-.charts-row { display: grid; grid-template-columns: 1fr 340px; gap: 1rem; }
-@media (max-width: 1024px) { .charts-row { grid-template-columns: 1fr; } }
+.charts-row { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 1rem; width: 100%; min-width: 0; }
+@media (max-width: 1024px) { .charts-row { grid-template-columns: minmax(0, 1fr); } }
+
+.table-card {
+  margin-top: 1.25rem;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.table-card-header {
+  padding: 1.25rem 1.25rem 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.borderless-table {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.change-positive {
+  color: #16a34a;
+  font-weight: 500;
+  font-size: 0.8125rem;
+}
+
+.change-negative {
+  color: #dc2626;
+  font-weight: 500;
+  font-size: 0.8125rem;
+}
 
 .chart-card { padding: 1.25rem; }
 

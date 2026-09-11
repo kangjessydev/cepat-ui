@@ -58,7 +58,7 @@
 
     <!-- Delete confirmation -->
     <BaseModal v-model="showDeleteModal" title="Delete Account" size="sm" persistent>
-      <p style="color: var(--text-secondary); font-size: 0.875rem; margin: 0">
+      <p class="modal-confirm-text">
         This will permanently delete your account. This action <strong>cannot be undone</strong>.
       </p>
       <template #footer>
@@ -164,4 +164,11 @@ async function handlePrefsSave() {
 
 .danger-item-label { font-size: 0.875rem; font-weight: 500; color: #b91c1c; margin: 0 0 0.25rem; }
 .danger-item-desc { font-size: 0.8125rem; color: #dc2626; margin: 0; opacity: 0.8; }
+
+.modal-confirm-text {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin: 0;
+  line-height: 1.5;
+}
 </style>

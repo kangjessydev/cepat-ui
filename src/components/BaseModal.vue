@@ -179,4 +179,15 @@ watch(() => props.modelValue, (open) => {
   from { opacity: 1; transform: scale(1) translateY(0); }
   to   { opacity: 0; transform: scale(0.95) translateY(10px); }
 }
+
+/* Mobile */
+@media (max-width: 640px) {
+  .modal-backdrop {
+    padding: 0.75rem;
+  }
+  .modal-panel {
+    max-width: calc(100vw - 1.5rem);
+    border-radius: 12px;
+  }
+}
 </style>

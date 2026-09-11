@@ -10,7 +10,7 @@
         We sent a password reset link to <strong>{{ sentEmail }}</strong>.
         Check your inbox and follow the instructions.
       </p>
-      <button class="btn-submit" style="margin-top: 0.5rem" @click="sent = false">
+      <button class="btn-submit btn-retry" @click="sent = false">
         Try a different email
       </button>
     </template>
@@ -48,7 +48,7 @@
 
     <p class="auth-footer-link">
       <router-link to="/login">
-        <ArrowLeft :size="13" style="vertical-align: middle" />
+        <ArrowLeft :size="13" class="back-icon" />
         Back to sign in
       </router-link>
     </p>
@@ -124,4 +124,7 @@ async function handleSubmit() {
 .auth-footer-link { font-size: 0.8125rem; text-align: center; margin-top: 1.25rem; }
 .auth-footer-link a { color: var(--text-secondary); text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem; }
 .auth-footer-link a:hover { color: var(--text-primary); }
+
+.btn-retry { margin-top: 0.5rem; }
+.back-icon { vertical-align: middle; }
 </style>
