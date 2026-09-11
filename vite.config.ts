@@ -48,4 +48,25 @@ export default defineConfig({
   css: {
     devSourcemap: true,
   },
+
+  build: {
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('@lucide')) {
+              return 'icons-vendor'
+            }
+            if (id.includes('vue') || id.includes('pinia') || id.includes('@vueuse') || id.includes('unhead')) {
+              return 'vue-vendor'
+            }
+            if (id.includes('axios')) {
+              return 'axios-vendor'
+            }
+          }
+        },
+      },
+    },
+  },
 })

@@ -1,5 +1,6 @@
 // src/core/router/index.ts
 import { useAuthStore } from '@/core/stores/auth.store'
+import { authAdapter } from '@/plugins/auth'
 import appConfig from '@/app.config'
 import { createRouter, createWebHistory } from 'vue-router'
 
@@ -106,7 +107,6 @@ router.beforeEach(async (to) => {
     // For real adapters like Sanctum, this re-fetches user data
     if (auth.token) {
       try {
-        const { authAdapter } = await import('@/plugins/auth')
         const user = await authAdapter.getUser()
         auth.user = user
       } catch {
