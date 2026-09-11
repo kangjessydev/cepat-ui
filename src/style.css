@@ -1,0 +1,174 @@
+@import "tailwindcss";
+
+/* ============================================================
+   CEPAT UI — Design System
+   Slate + Emerald palette, clean SaaS aesthetic
+   ============================================================ */
+
+@theme {
+  /* --- Fonts --- */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* --- Brand Colors (Emerald as primary) --- */
+  --color-primary-50: #ecfdf5;
+  --color-primary-100: #d1fae5;
+  --color-primary-200: #a7f3d0;
+  --color-primary-300: #6ee7b7;
+  --color-primary-400: #34d399;
+  --color-primary-500: #10b981;
+  --color-primary-600: #059669;
+  --color-primary-700: #047857;
+  --color-primary-800: #065f46;
+  --color-primary-900: #064e3b;
+  --color-primary-950: #022c22;
+
+  /* --- Neutral (Slate) --- */
+  --color-neutral-50: #f8fafc;
+  --color-neutral-100: #f1f5f9;
+  --color-neutral-200: #e2e8f0;
+  --color-neutral-300: #cbd5e1;
+  --color-neutral-400: #94a3b8;
+  --color-neutral-500: #64748b;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-neutral-800: #1e293b;
+  --color-neutral-900: #0f172a;
+  --color-neutral-950: #020617;
+
+  /* --- Semantic Colors --- */
+  --color-success-500: #22c55e;
+  --color-warning-500: #f59e0b;
+  --color-danger-500: #ef4444;
+  --color-info-500: #3b82f6;
+
+  /* --- Radius --- */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+}
+
+/* ============================================================
+   CSS Variables — Light & Dark mode tokens
+   ============================================================ */
+:root {
+  /* Backgrounds */
+  --bg-app: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-surface-raised: #f8fafc;
+  --bg-sidebar: #ffffff;
+  --bg-sidebar-active: #ecfdf5;
+  --bg-navbar: #ffffff;
+
+  /* Text */
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --text-sidebar: #334155;
+  --text-sidebar-active: #047857;
+  --text-sidebar-icon: #94a3b8;
+  --text-sidebar-icon-active: #059669;
+
+  /* Borders */
+  --border-color: #e2e8f0;
+  --border-sidebar: #f1f5f9;
+
+  /* Sidebar dimensions */
+  --sidebar-width: 260px;
+  --sidebar-collapsed-width: 64px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+}
+
+/* Dark mode */
+.dark {
+  --bg-app: #020617;
+  --bg-surface: #0f172a;
+  --bg-surface-raised: #1e293b;
+  --bg-sidebar: #0f172a;
+  --bg-sidebar-active: #022c22;
+  --bg-navbar: #0f172a;
+
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-sidebar: #cbd5e1;
+  --text-sidebar-active: #34d399;
+  --text-sidebar-icon: #64748b;
+  --text-sidebar-icon-active: #34d399;
+
+  --border-color: #1e293b;
+  --border-sidebar: #1e293b;
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+}
+
+/* ============================================================
+   Base Styles
+   ============================================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  margin: 0;
+  min-height: 100vh;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ============================================================
+   Utility Classes
+   ============================================================ */
+
+/* Card */
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-card);
+}
+
+/* Page transition */
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
