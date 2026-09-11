@@ -53,8 +53,32 @@ export class MockAuthAdapter implements AuthAdapter {
   }
 
   async getUser(): Promise<User> {
-    await delay(200)
-    throw new Error('Token expired — please login again')
+    await delay(150)
+    if (typeof window !== 'undefined') {
+      const savedUser = localStorage.getItem('cepat-ui-user') || sessionStorage.getItem('cepat-ui-user')
+      if (savedUser) {
+        try {
+          return JSON.parse(savedUser) as User
+        } catch {
+          // fallback to MOCK_USERS
+        }
+      }
+
+      const savedToken = localStorage.getItem('cepat-ui-token') || sessionStorage.getItem('cepat-ui-token')
+      if (savedToken && savedToken.startsWith('mock-token-')) {
+        const parts = savedToken.split('-')
+        const userId = Number(parts[2])
+        const found = MOCK_USERS.find(u => u.id === userId)
+        if (found) {
+          const { password: _, ...user } = found
+          return user
+        }
+      }
+    }
+
+    // Default fallback to first mock user
+    const { password: _, ...defaultUser } = MOCK_USERS[0]
+    return defaultUser
   }
 
   async register(payload: RegisterPayload): Promise<AuthResponse> {

@@ -85,6 +85,157 @@ function ensureDir(dirPath) {
   }
 }
 
+// --- Parsing helpers ---
+function parseNavigationItems(content) {
+  const items = []
+  const arrayMatch = content.match(/navigationItems:\s*NavItem\[\]\s*=\s*\[([\s\S]*)\]\s*$/m)
+  if (!arrayMatch) return items
+
+  const body = arrayMatch[1]
+  let depth = 0
+  let currentBlock = ''
+  let inString = false
+  let stringChar = ''
+  let inLineComment = false
+
+  const rawBlocks = []
+
+  for (let i = 0; i < body.length; i++) {
+    const ch = body[i]
+    const nextCh = body[i + 1]
+
+    if (inLineComment) {
+      if (ch === '\n') inLineComment = false
+      continue
+    }
+
+    if (!inString && ch === '/' && nextCh === '/') {
+      inLineComment = true
+      i++
+      continue
+    }
+
+    if (!inString && (ch === "'" || ch === '"' || ch === '`')) {
+      inString = true
+      stringChar = ch
+      if (depth > 0) currentBlock += ch
+      continue
+    }
+
+    if (inString && ch === stringChar && body[i - 1] !== '\\') {
+      inString = false
+      if (depth > 0) currentBlock += ch
+      continue
+    }
+
+    if (inString) {
+      if (depth > 0) currentBlock += ch
+      continue
+    }
+
+    if (ch === '{') {
+      if (depth === 0) currentBlock = ''
+      depth++
+      currentBlock += ch
+      continue
+    }
+
+    if (ch === '}') {
+      depth--
+      currentBlock += ch
+      if (depth === 0) {
+        rawBlocks.push(currentBlock)
+        currentBlock = ''
+      }
+      continue
+    }
+
+    if (depth > 0) {
+      currentBlock += ch
+    }
+  }
+
+  for (const block of rawBlocks) {
+    const titleMatch = block.match(/title:\s*['"]([^'"]+)['"]/)
+    const iconMatch = block.match(/icon:\s*['"]([^'"]+)['"]/)
+    const routeMatch = block.match(/route:\s*['"]([^'"]+)['"]/)
+    const rolesMatch = block.match(/roles:\s*\[([^\]]*)\]/)
+    const childrenMatch = block.match(/children:\s*\[([\s\S]*)\]/)
+
+    const title = titleMatch ? titleMatch[1] : ''
+    const icon = iconMatch ? iconMatch[1] : ''
+    const roles = rolesMatch
+      ? rolesMatch[1].split(',').map(r => r.replace(/['"\s]/g, '')).filter(Boolean)
+      : []
+
+    if (!title) continue
+
+    if (childrenMatch) {
+      const childBody = childrenMatch[1]
+      const childBlocks = []
+      let cDepth = 0
+      let cBlock = ''
+      for (const c of childBody) {
+        if (c === '{') {
+          if (cDepth === 0) cBlock = ''
+          cDepth++
+          cBlock += c
+        } else if (c === '}') {
+          cDepth--
+          cBlock += c
+          if (cDepth === 0) {
+            childBlocks.push(cBlock)
+            cBlock = ''
+          }
+        } else if (cDepth > 0) {
+          cBlock += c
+        }
+      }
+
+      const children = childBlocks.map(cb => {
+        const cTitle = (cb.match(/title:\s*['"]([^'"]+)['"]/) || [])[1] || ''
+        const cIcon = (cb.match(/icon:\s*['"]([^'"]+)['"]/) || [])[1] || ''
+        const cRoute = (cb.match(/route:\s*['"]([^'"]+)['"]/) || [])[1] || ''
+        const cRolesMatch = cb.match(/roles:\s*\[([^\]]*)\]/)
+        const cRoles = cRolesMatch
+          ? cRolesMatch[1].split(',').map(r => r.replace(/['"\s]/g, '')).filter(Boolean)
+          : []
+        return { title: cTitle, icon: cIcon, route: cRoute, roles: cRoles }
+      }).filter(c => c.title)
+
+      items.push({ title, icon, roles, children })
+    } else if (routeMatch) {
+      items.push({ title, icon, route: routeMatch[1], roles })
+    }
+  }
+
+  return items
+}
+
+function parseRouterRoutes(content) {
+  const routes = []
+  const matches = content.matchAll(/\{\s*path:\s*['"]([^'"]+)['"](?:[\s\S]*?name:\s*['"]([^'"]+)['"])?(?:[\s\S]*?meta:\s*\{([^}]*)\})?[\s\S]*?\}/g)
+
+  for (const m of matches) {
+    const routePath = m[1]
+    const routeName = m[2] || ''
+    const metaStr = m[3] || ''
+
+    const isAuth = metaStr.includes('requiresAuth: false')
+      ? false
+      : (metaStr.includes('requiresAuth: true') ? true : undefined)
+    const rolesMatch = metaStr.match(/roles:\s*\[([^\]]*)\]/)
+    const roles = rolesMatch
+      ? rolesMatch[1].split(',').map(r => r.replace(/['"\s]/g, '')).filter(Boolean)
+      : []
+    const titleMatch = metaStr.match(/title:\s*['"]([^'"]+)['"]/)
+    const title = titleMatch ? titleMatch[1] : ''
+
+    routes.push({ path: routePath, name: routeName, requiresAuth: isAuth, roles, title })
+  }
+  return routes
+}
+
 function registerRoute({ routePath, routeName, componentPath, title, roles }) {
   const routerFile = path.join(ROOT, 'src/core/router/index.ts')
   if (!fs.existsSync(routerFile)) return false
@@ -104,7 +255,7 @@ function registerRoute({ routePath, routeName, componentPath, title, roles }) {
     },
 `
 
-  // Insert right before '// 404'
+  // 1. Try to insert right before '// 404'
   const marker = '// 404'
   if (content.includes(marker)) {
     content = content.replace(marker, `${newRouteEntry}    ${marker}`)
@@ -112,6 +263,16 @@ function registerRoute({ routePath, routeName, componentPath, title, roles }) {
     console.log(`  ${c.green}✓ Added route to ${c.bold}src/core/router/index.ts${c.reset}`)
     return true
   }
+
+  // 2. Fallback: insert before wildcard route
+  const catchAllRegex = /(\s*\{\s*path:\s*['"]\/:pathMatch)/
+  if (catchAllRegex.test(content)) {
+    content = content.replace(catchAllRegex, `\n${newRouteEntry}$1`)
+    fs.writeFileSync(routerFile, content, 'utf-8')
+    console.log(`  ${c.green}✓ Added route to ${c.bold}src/core/router/index.ts${c.reset}`)
+    return true
+  }
+
   return false
 }
 
@@ -120,25 +281,72 @@ function registerNavigation({ title, icon, route, roles, parent }) {
   if (!fs.existsSync(navFile)) return false
 
   let content = fs.readFileSync(navFile, 'utf-8')
-  if (content.includes(`route: '${route}'`)) {
-    console.log(`  ${c.yellow}⚠ Navigation item for '${route}' already exists in navigation.ts${c.reset}`)
-    return false
+  const navItems = parseNavigationItems(content)
+
+  // Check for duplicate route or title
+  for (const item of navItems) {
+    if (item.route === route) {
+      console.log(`  ${c.yellow}⚠ Navigation route '${route}' already exists in navigation.ts${c.reset}`)
+      return false
+    }
+    if (!parent && item.title.toLowerCase() === title.toLowerCase()) {
+      console.log(`  ${c.yellow}⚠ Navigation item '${title}' already exists at root in navigation.ts${c.reset}`)
+      return false
+    }
+    if (item.children) {
+      for (const child of item.children) {
+        if (child.route === route) {
+          console.log(`  ${c.yellow}⚠ Navigation route '${route}' already exists under '${item.title}' in navigation.ts${c.reset}`)
+          return false
+        }
+        if (parent && item.title.toLowerCase() === parent.toLowerCase() && child.title.toLowerCase() === title.toLowerCase()) {
+          console.log(`  ${c.yellow}⚠ Navigation item '${title}' already exists under parent '${parent}' in navigation.ts${c.reset}`)
+          return false
+        }
+      }
+    }
   }
 
   const roleEntry = roles && roles.length > 0 ? `,\n    roles: [${roles.map(r => `'${r}'`).join(', ')}]` : ''
 
   if (parent) {
-    // Attempt to nest inside existing parent group
-    const parentRegex = new RegExp(`title:\\s*['"]${parent}['"][\\s\\S]*?children:\\s*\\[`, 'i')
+    const parentGroup = navItems.find(item => item.title.toLowerCase() === parent.toLowerCase() && item.children)
+    if (!parentGroup) {
+      console.log(`  ${c.yellow}⚠ Parent menu group '${parent}' not found. Creating parent group '${toTitleCase(parent)}'...${c.reset}`)
+      const newParentGroup = `  {
+    title: '${toTitleCase(parent)}',
+    icon: 'Folder',
+    order: 99,
+    children: [
+      {
+        title: '${title}',
+        icon: '${icon}',
+        route: '${route}'${roleEntry},
+      },
+    ],
+  },
+`
+      const lastBracket = content.lastIndexOf(']')
+      if (lastBracket !== -1) {
+        content = content.slice(0, lastBracket) + newParentGroup + content.slice(lastBracket)
+        fs.writeFileSync(navFile, content, 'utf-8')
+        console.log(`  ${c.green}✓ Created parent group '${toTitleCase(parent)}' with '${title}' in ${c.bold}src/core/router/navigation.ts${c.reset}`)
+        return true
+      }
+      return false
+    }
+
+    // Insert inside existing parent group
+    const parentRegex = new RegExp(`(title:\\s*['"]${parentGroup.title}['"][\\s\\S]*?children:\\s*\\[)`, 'i')
     if (parentRegex.test(content)) {
       const childEntry = `\n      {
         title: '${title}',
         icon: '${icon}',
-        route: '${route}',
+        route: '${route}'${roleEntry},
       },`
       content = content.replace(parentRegex, match => match + childEntry)
       fs.writeFileSync(navFile, content, 'utf-8')
-      console.log(`  ${c.green}✓ Added menu item under '${parent}' in ${c.bold}src/core/router/navigation.ts${c.reset}`)
+      console.log(`  ${c.green}✓ Added menu item under '${parentGroup.title}' in ${c.bold}src/core/router/navigation.ts${c.reset}`)
       return true
     }
   }
@@ -171,14 +379,23 @@ function makePage(name, options) {
   const kebabName = toKebabCase(name)
   const pascalName = toPascalCase(name)
   const title = options.title || toTitleCase(name)
-  const routePath = options.route || `/${kebabName}`
+  const defaultRoute = options.parent ? `/${toKebabCase(options.parent)}/${kebabName}` : `/${kebabName}`
+  const routePath = options.route || defaultRoute
   const icon = options.icon || 'FileText'
   const roles = options.roles ? options.roles.split(',').map(r => r.trim()) : []
   const force = !!options.force
   const noNav = !!options['no-nav']
 
-  const targetDir = path.join(ROOT, 'src/pages', kebabName)
-  const targetFile = path.join(targetDir, 'index.vue')
+  const targetDir = options.parent
+    ? path.join(ROOT, 'src/pages', toKebabCase(options.parent))
+    : path.join(ROOT, 'src/pages', kebabName)
+  const targetFile = options.parent
+    ? path.join(targetDir, `${kebabName}.vue`)
+    : path.join(targetDir, 'index.vue')
+  const componentPath = options.parent
+    ? `@/pages/${toKebabCase(options.parent)}/${kebabName}.vue`
+    : `@/pages/${kebabName}/index.vue`
+  const routeName = options.parent ? `${toKebabCase(options.parent)}-${kebabName}` : kebabName
 
   if (fs.existsSync(targetFile) && !force) {
     console.error(`${c.red}Error: Page already exists at ${targetFile}.${c.reset} Use --force to overwrite.`)
@@ -259,13 +476,13 @@ function handleAction() {
 
   fs.writeFileSync(targetFile, template, 'utf-8')
   console.log(`\n${c.green}${c.bold}🎉 Page created successfully!${c.reset}`)
-  console.log(`  ${c.cyan}File:${c.reset} src/pages/${kebabName}/index.vue`)
+  console.log(`  ${c.cyan}File:${c.reset} ${path.relative(ROOT, targetFile)}`)
 
   // Register router
   registerRoute({
     routePath,
-    routeName: kebabName,
-    componentPath: `@/pages/${kebabName}/index.vue`,
+    routeName,
+    componentPath,
     title,
     roles,
   })
@@ -293,7 +510,8 @@ function makeCrud(name, options) {
   const kebabName = toKebabCase(name)
   const pascalName = toPascalCase(name)
   const title = options.title || toTitleCase(name)
-  const routePath = options.route || `/${kebabName}`
+  const defaultRoute = options.parent ? `/${toKebabCase(options.parent)}/${kebabName}` : `/${kebabName}`
+  const routePath = options.route || defaultRoute
   const icon = options.icon || 'Package'
   const roles = options.roles ? options.roles.split(',').map(r => r.trim()) : []
   const force = !!options.force
@@ -312,8 +530,14 @@ function makeCrud(name, options) {
         { name: 'status', type: 'select' },
       ]
 
-  const targetDir = path.join(ROOT, 'src/pages', kebabName)
+  const targetDir = options.parent
+    ? path.join(ROOT, 'src/pages', toKebabCase(options.parent), kebabName)
+    : path.join(ROOT, 'src/pages', kebabName)
   const targetFile = path.join(targetDir, 'index.vue')
+  const componentPath = options.parent
+    ? `@/pages/${toKebabCase(options.parent)}/${kebabName}/index.vue`
+    : `@/pages/${kebabName}/index.vue`
+  const routeName = options.parent ? `${toKebabCase(options.parent)}-${kebabName}` : kebabName
 
   if (fs.existsSync(targetFile) && !force) {
     console.error(`${c.red}Error: Resource already exists at ${targetFile}.${c.reset} Use --force to overwrite.`)
@@ -566,14 +790,14 @@ const bulkActions = [
 
   fs.writeFileSync(targetFile, template, 'utf-8')
   console.log(`\n${c.green}${c.bold}🎉 Full CRUD Resource '${title}' created successfully!${c.reset}`)
-  console.log(`  ${c.cyan}File:${c.reset} src/pages/${kebabName}/index.vue`)
+  console.log(`  ${c.cyan}File:${c.reset} ${path.relative(ROOT, targetFile)}`)
   console.log(`  ${c.dim}Features included: DataTable, AutoForm modal, Create/Edit/Delete, Search, Sort, Pagination, Bulk Actions.${c.reset}`)
 
   // Register router
   registerRoute({
     routePath,
-    routeName: kebabName,
-    componentPath: `@/pages/${kebabName}/index.vue`,
+    routeName,
+    componentPath,
     title,
     roles,
   })
@@ -694,10 +918,39 @@ function listRoutes() {
 
   if (fs.existsSync(navFile)) {
     const navContent = fs.readFileSync(navFile, 'utf-8')
-    const matches = navContent.matchAll(/title:\s*['"]([^'"]+)['"][\s\S]*?route:\s*['"]([^'"]+)['"]/g)
-    console.log(`${c.cyan}${c.bold}Sidebar Navigation Items:${c.reset}`)
-    for (const match of matches) {
-      console.log(`  • ${c.green}${match[1].padEnd(20)}${c.reset} ${c.dim}→${c.reset} ${match[2]}`)
+    const navItems = parseNavigationItems(navContent)
+
+    console.log(`${c.cyan}${c.bold}Sidebar Navigation Items (src/core/router/navigation.ts):${c.reset}`)
+    for (const item of navItems) {
+      const roleBadge = item.roles && item.roles.length > 0 ? ` ${c.magenta}[roles: ${item.roles.join(', ')}]${c.reset}` : ''
+      if (item.children && item.children.length > 0) {
+        console.log(`  ${c.blue}📁 ${c.bold}${item.title} (group)${c.reset}${roleBadge}`)
+        for (let i = 0; i < item.children.length; i++) {
+          const child = item.children[i]
+          const isLast = i === item.children.length - 1
+          const prefix = isLast ? '     └─' : '     ├─'
+          const cRole = child.roles && child.roles.length > 0 ? ` ${c.magenta}[roles: ${child.roles.join(', ')}]${c.reset}` : ''
+          console.log(`${prefix} ${c.green}${child.title.padEnd(18)}${c.reset} ${c.dim}→${c.reset} ${child.route}${cRole}`)
+        }
+      } else if (item.route) {
+        console.log(`  • ${c.green}${item.title.padEnd(20)}${c.reset} ${c.dim}→${c.reset} ${item.route}${roleBadge}`)
+      }
+    }
+  }
+
+  if (fs.existsSync(routerFile)) {
+    const routerContent = fs.readFileSync(routerFile, 'utf-8')
+    const routerRoutes = parseRouterRoutes(routerContent)
+
+    console.log(`\n${c.cyan}${c.bold}Vue Router Registered Routes (src/core/router/index.ts):${c.reset}`)
+    for (const r of routerRoutes) {
+      if (!r.path) continue
+      const namePart = r.name ? `${c.dim}(name: ${r.name})${c.reset} ` : ''
+      const authPart = r.requiresAuth === false
+        ? `${c.yellow}[public]${c.reset}`
+        : (r.requiresAuth === true ? `${c.green}[auth]${c.reset}` : '')
+      const rolePart = r.roles && r.roles.length > 0 ? ` ${c.magenta}[roles: ${r.roles.join(', ')}]${c.reset}` : ''
+      console.log(`  • ${c.bold}${r.path.padEnd(24)}${c.reset} ${namePart}${authPart}${rolePart}`)
     }
   }
   console.log('')

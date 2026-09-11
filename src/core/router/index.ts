@@ -55,6 +55,12 @@ const router = createRouter({
       component: () => import('@/pages/settings/general.vue'),
       meta: { layout: 'dashboard', requiresAuth: true, title: 'General Settings' },
     },
+    {
+      path: '/settings/security',
+      name: 'settings-security',
+      component: () => import('@/pages/settings/security.vue'),
+      meta: { layout: 'dashboard', requiresAuth: true, title: 'Security Settings' },
+    },
 
     {
       path: '/products',
